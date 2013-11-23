@@ -565,7 +565,7 @@
 || A Deck of Cards for playing various games of chance ||
 */
 
-var/global/decks = 0  //for keeping track of unique decks
+
 
 obj/item/toy/cards
 	name = "deck of cards"
@@ -573,13 +573,10 @@ obj/item/toy/cards
 	icon = 'icons/obj/toy.dmi'
 	icon_state = "deck_full"
 	var/list/cards = list()
-	var/deckno = 0
 	var/cooldown = 0
 
 obj/item/toy/cards/New()
 	..()
-	decks += 1
-	deckno = decks
 	for(var/i = 2; i <= 10; i++)
 		cards += "[i] of Hearts"
 		cards += "[i] of Spades"
@@ -612,7 +609,7 @@ obj/item/toy/cards/attack_hand(mob/user as mob)
 	var/obj/item/toy/singlecard/H = new/obj/item/toy/singlecard(user.loc)
 	choice = cards[1]
 	H.cardname = choice
-	H.deckno = src.deckno
+	H.parentdeck = src
 	src.cards -= choice
 	H.pickup(user)
 	user.put_in_active_hand(H)
@@ -636,7 +633,7 @@ obj/item/toy/cards/attack_self(mob/user as mob)
 obj/item/toy/cards/attackby(obj/item/toy/singlecard/C, mob/living/user)
 	..()
 	if(istype(C, /obj/item/toy/singlecard))
-		if(C.deckno == src.deckno)
+		if(C.parentdeck == src)
 			src.cards += C.cardname
 			user.u_equip(C)
 			src.visible_message("[user] adds a card to the bottom of the deck")
@@ -654,7 +651,7 @@ obj/item/toy/cards/attackby(obj/item/toy/singlecard/C, mob/living/user)
 obj/item/toy/cards/attackby(obj/item/toy/cardhand/C, mob/living/user)
 	..()
 	if(istype(C, /obj/item/toy/cardhand))
-		if(C.deckno == src.deckno)
+		if(C.parentdeck == src)
 			src.cards += C.currenthand
 			user.u_equip(C)
 			src.visible_message("[user] puts their hand of cards in the deck")
@@ -698,14 +695,14 @@ obj/item/toy/cardhand
 	icon = 'icons/obj/toy.dmi'
 	icon_state = "hand2"
 	var/list/currenthand = list()
-	var/deckno = 0
+	var/obj/item/toy/cards/parentdeck = null
 	var/choice = null
 
 obj/item/toy/cardhand/attack_hand(mob/user as mob)
 	if(src.choice != null)
 		var/obj/item/toy/singlecard/C = new/obj/item/toy/singlecard(user.loc)
 		currenthand -= choice
-		C.deckno = src.deckno
+		C.parentdeck = src.parentdeck
 		C.cardname = src.choice
 		C.pickup(user)
 		user.put_in_active_hand(C)
@@ -720,7 +717,7 @@ obj/item/toy/cardhand/attack_hand(mob/user as mob)
 			icon_state = "hand4"
 		if(currenthand.len == 1)
 			var/obj/item/toy/singlecard/N = new/obj/item/toy/singlecard(src.loc)
-			N.deckno = src.deckno
+			N.parentdeck = src.parentdeck
 			N.cardname = currenthand[1]
 			user.u_equip(src)
 			N.pickup(user)
@@ -754,7 +751,7 @@ obj/item/toy/cardhand/Topic(href, href_list)
 
 obj/item/toy/cardhand/attackby(obj/item/toy/singlecard/C, mob/living/user)
 	if(istype(C, /obj/item/toy/singlecard/))
-		if(C.deckno == src.deckno)
+		if(C.parentdeck == src.parentdeck)
 			src.currenthand += C.cardname
 			user.u_equip(C)
 			user << "\blue You add the [C.cardname] to your hand."
@@ -779,7 +776,7 @@ obj/item/toy/singlecard
 	icon = 'icons/obj/toy.dmi'
 	icon_state = "singlecard_down"
 	var/cardname = null
-	var/deckno = 0
+	var/obj/item/toy/cards/parentdeck = null
 	var/flipped = 0
 	pixel_x = -5
 
@@ -800,11 +797,11 @@ obj/item/toy/singlecard/verb/Flip()
 
 obj/item/toy/singlecard/attackby(obj/item/toy/singlecard/C, mob/living/user)
 	if(istype(C, /obj/item/toy/singlecard/))
-		if(C.deckno == src.deckno)
+		if(C.parentdeck == src.parentdeck)
 			var/obj/item/toy/cardhand/H = new/obj/item/toy/cardhand(user.loc)
 			H.currenthand += C.cardname
 			H.currenthand += src.cardname
-			H.deckno = C.deckno
+			H.parentdeck = C.parentdeck
 			user.u_equip(C)
 			H.pickup(user)
 			user.put_in_active_hand(H)
