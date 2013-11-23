@@ -616,7 +616,6 @@ obj/item/toy/cards/attack_hand(mob/user as mob)
 	src.cards -= choice
 	H.pickup(user)
 	user.put_in_active_hand(H)
-	user << "\blue You draw a card from the deck."
 	src.visible_message("[user] draws a card from the deck")
 	if(cards.len > 26)
 		src.icon_state = "deck_full"
@@ -640,7 +639,6 @@ obj/item/toy/cards/attackby(obj/item/toy/singlecard/C, mob/living/user)
 		if(C.deckno == src.deckno)
 			src.cards += C.cardname
 			user.u_equip(C)
-			user << "\blue You add the card to the bottom of the deck."
 			src.visible_message("[user] adds a card to the bottom of the deck")
 			del(C)
 		else
@@ -659,7 +657,6 @@ obj/item/toy/cards/attackby(obj/item/toy/cardhand/C, mob/living/user)
 		if(C.deckno == src.deckno)
 			src.cards += C.currenthand
 			user.u_equip(C)
-			user << "\blue You add your hand of cards back to the deck."
 			src.visible_message("[user] puts their hand of cards in the deck")
 			del(C)
 		else
@@ -728,7 +725,7 @@ obj/item/toy/cardhand/attack_hand(mob/user as mob)
 			user.u_equip(src)
 			N.pickup(user)
 			user.put_in_inactive_hand(N)
-			user << "\blue You also take the last card of your hand and hold it."
+			user << "\blue You also take [currenthand[1]] and hold it."
 			del(src)
 	else
 		..()
