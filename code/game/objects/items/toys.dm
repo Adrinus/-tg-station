@@ -556,5 +556,219 @@
 		cooldown = 1
 		spawn(30) cooldown = 0
 		return
-
 	..()
+
+
+
+
+/*
+|| A Deck of Cards for playing various games of chance ||
+*/
+
+var/global/decks = 0  //for keeping track of unique decks
+
+obj/item/toy/cards
+	name = "deck of cards"
+	desc = "A deck of space-grade playing cards."
+	icon = 'icons/obj/toy.dmi'
+	icon_state = "deck_full"
+	var/list/cards = list()
+	var/deckno = 0
+
+obj/item/toy/cards/New()
+	..()
+	decks += 1
+	deckno = decks
+	for(var/i = 2; i <= 10; i++)
+		cards += "[i] of Hearts"
+		cards += "[i] of Spades"
+		cards += "[i] of Clubs"
+		cards += "[i] of Diamonds"
+	cards += "King of Hearts"
+	cards += "King of Spades"
+	cards += "King of Clubs"
+	cards += "King of Diamonds"
+	cards += "Queen of Hearts"
+	cards += "Queen of Spades"
+	cards += "Queen of Clubs"
+	cards += "Queen of Diamonds"
+	cards += "Jack of Hearts"
+	cards += "Jack of Spades"
+	cards += "Jack of Clubs"
+	cards += "Jack of Diamonds"
+	cards += "Ace of Hearts"
+	cards += "Ace of Spades"
+	cards += "Ace of Clubs"
+	cards += "Ace of Diamonds"
+
+obj/item/toy/cards/attack_hand(mob/user as mob)
+	if(cards.len > 26)
+		src.icon_state = "deck_full"
+	else if(cards.len > 10)
+		src.icon_state = "deck_half"
+	else if(cards.len > 1)
+		src.icon_state = "deck_low"
+	if(cards.len == 0)
+		src.icon_state = "deck_empty"
+		user << "\red There are no more cards to draw."
+	var/obj/item/toy/singlecard/H = new/obj/item/toy/singlecard(user.loc)
+	var/choice = pick(src.cards)
+	H.cardname = choice
+	H.deckno = src.deckno
+	src.cards -= choice
+	H.pickup(user)
+	user.put_in_active_hand(H)
+	user << "\blue You draw a card from the deck."
+
+
+obj/item/toy/cards/attackby(obj/item/toy/singlecard/C, mob/living/user)
+	..()
+	if(istype(C, /obj/item/toy/singlecard))
+		if(C.deckno == src.deckno)
+			src.cards += C.cardname
+			user.u_equip(C)
+			user << "\blue You add the card back to the deck."
+			del(C)
+		else
+			user << "\red You can't mix cards from other decks."
+
+obj/item/toy/cards/attackby(obj/item/toy/cardhand/C, mob/living/user)
+	..()
+	if(istype(C, /obj/item/toy/cardhand))
+		if(C.deckno == src.deckno)
+			src.cards += C.currenthand
+			user.u_equip(C)
+			user << "\blue You add your hand of cards back to the deck."
+			del(C)
+		else
+			user << "\red You can't mix cards from other decks."
+
+obj/item/toy/cards/MouseDrop(atom/over_object)
+	var/mob/M = usr
+	if(M.restrained() || M.stat)
+		usr << "\red You can't do that while restrained."
+		return
+
+	if(over_object == M)
+		M.put_in_hands(src)
+		usr << "\blue You pick up the deck."
+
+	else if(istype(over_object, /obj/screen))
+		switch(over_object.name)
+			if("r_hand")
+				M.u_equip(src)
+				M.put_in_r_hand(src)
+				usr << "\blue You pick up the deck."
+			if("l_hand")
+				M.u_equip(src)
+				M.put_in_l_hand(src)
+				usr << "\blue You pick up the deck."
+
+
+
+
+obj/item/toy/cardhand
+	name = "hand of cards"
+	desc = "A number of cards not in a deck, customarily held in ones hand."
+	icon = 'icons/obj/toy.dmi'
+	icon_state = "hand2"
+	var/list/currenthand = list()
+	var/deckno = 0
+	var/choice = null
+
+obj/item/toy/cardhand/attack_hand(mob/user as mob)
+	if(src.choice != null)
+		var/obj/item/toy/singlecard/C = new/obj/item/toy/singlecard(user.loc)
+		currenthand -= choice
+		C.deckno = src.deckno
+		C.cardname = src.choice
+		C.pickup(user)
+		user.put_in_active_hand(C)
+		src.choice = null
+		user << "\blue You take the [src.choice] from your hand."
+		if(currenthand.len < 5)
+			icon_state = "hand4"
+		else if(currenthand.len < 4)
+			icon_state = "hand3"
+		else if(currenthand.len < 3)
+			icon_state = "hand2"
+		if(currenthand.len == 1)
+			var/obj/item/toy/singlecard/N = new/obj/item/toy/singlecard(src.loc)
+			N.deckno = src.deckno
+			N.cardname = currenthand[1]
+			user.u_equip(src)
+			N.pickup(user)
+			user.put_in_inactive_hand(N)
+			user << "\blue You also take the last card of your hand and hold it."
+			del(src)
+	else
+		user << "\red Choose which card to remove first."
+
+
+obj/item/toy/cardhand/attack_self(mob/user as mob)
+	user.set_machine(src)
+	var/dat = "You have:<BR>"
+	for(var/t in currenthand)
+		dat += "<A href='?src=\ref[src];pick=[t]'>A [t].</A><BR>"
+	dat += "Which card will you remove next?"
+	var/datum/browser/popup = new(user, "cardhand", "Hand of Cards", 400, 240)
+	popup.set_title_image(user.browse_rsc_icon(src.icon, src.icon_state))
+	popup.set_content(dat)
+	popup.open()
+
+
+obj/item/toy/cardhand/Topic(href, href_list)
+	if(..())
+		return
+	usr.set_machine(src)
+	if(href_list["pick"])
+		var/choice = href_list["pick"]
+		src.choice = choice
+
+obj/item/toy/cardhand/attackby(obj/item/toy/singlecard/C, mob/living/user)
+	if(C.deckno == src.deckno)
+		src.currenthand += C.cardname
+		user.u_equip(C)
+		user << "\blue You add the [C.cardname] to your hand."
+		if(currenthand.len > 4)
+			src.icon_state = "hand5"
+		else if(currenthand.len > 3)
+			src.icon_state = "hand4"
+		else if(currenthand.len > 2)
+			src.icon_state = "hand3"
+		del(C)
+	else
+		user << "\red You can't mix cards from other decks."
+
+
+
+
+
+obj/item/toy/singlecard
+	name = "card"
+	desc = "a card"
+	icon = 'icons/obj/toy.dmi'
+	icon_state = "hand1"
+	var/cardname = null
+	var/deckno = 0
+
+obj/item/toy/singlecard/attackby(obj/item/toy/singlecard/C, mob/living/user)
+	if(C.deckno == src.deckno)
+		var/obj/item/toy/cardhand/H = new/obj/item/toy/cardhand(user.loc)
+		H.currenthand += C.cardname
+		H.currenthand += src.cardname
+		H.deckno = C.deckno
+		user.u_equip(C)
+		H.pickup(user)
+		user.put_in_active_hand(H)
+		user << "\blue You combine the cards into a hand."
+		del(C)
+		del(src)
+	else
+		user << "\red You can't mix cards from other decks."
+
+obj/item/toy/singlecard/attack_self(mob/user as mob)
+	user << "\blue The card reads: [src.cardname]"
+
+
+
