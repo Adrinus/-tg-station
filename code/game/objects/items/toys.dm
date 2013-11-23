@@ -602,15 +602,10 @@ obj/item/toy/cards/New()
 	cards += "Ace of Diamonds"
 
 obj/item/toy/cards/attack_hand(mob/user as mob)
-	if(cards.len > 26)
-		src.icon_state = "deck_full"
-	else if(cards.len > 10)
-		src.icon_state = "deck_half"
-	else if(cards.len > 1)
-		src.icon_state = "deck_low"
 	if(cards.len == 0)
 		src.icon_state = "deck_empty"
 		user << "\red There are no more cards to draw."
+		return
 	var/obj/item/toy/singlecard/H = new/obj/item/toy/singlecard(user.loc)
 	var/choice = pick(src.cards)
 	H.cardname = choice
@@ -619,6 +614,13 @@ obj/item/toy/cards/attack_hand(mob/user as mob)
 	H.pickup(user)
 	user.put_in_active_hand(H)
 	user << "\blue You draw a card from the deck."
+	src.visible_message("[user] draws a card from the deck")
+	if(cards.len > 26)
+		src.icon_state = "deck_full"
+	else if(cards.len > 10)
+		src.icon_state = "deck_half"
+	else if(cards.len > 1)
+		src.icon_state = "deck_low"
 
 
 obj/item/toy/cards/attackby(obj/item/toy/singlecard/C, mob/living/user)
@@ -628,9 +630,17 @@ obj/item/toy/cards/attackby(obj/item/toy/singlecard/C, mob/living/user)
 			src.cards += C.cardname
 			user.u_equip(C)
 			user << "\blue You add the card back to the deck."
+			src.visible_message("[user] adds a card back to the deck")
 			del(C)
 		else
 			user << "\red You can't mix cards from other decks."
+		if(cards.len > 26)
+			src.icon_state = "deck_full"
+		else if(cards.len > 10)
+			src.icon_state = "deck_half"
+		else if(cards.len > 1)
+			src.icon_state = "deck_low"
+
 
 obj/item/toy/cards/attackby(obj/item/toy/cardhand/C, mob/living/user)
 	..()
@@ -639,9 +649,16 @@ obj/item/toy/cards/attackby(obj/item/toy/cardhand/C, mob/living/user)
 			src.cards += C.currenthand
 			user.u_equip(C)
 			user << "\blue You add your hand of cards back to the deck."
+			src.visible_message("[user] puts their hand of cards in the deck")
 			del(C)
 		else
 			user << "\red You can't mix cards from other decks."
+		if(cards.len > 26)
+			src.icon_state = "deck_full"
+		else if(cards.len > 10)
+			src.icon_state = "deck_half"
+		else if(cards.len > 1)
+			src.icon_state = "deck_low"
 
 obj/item/toy/cards/MouseDrop(atom/over_object)
 	var/mob/M = usr
@@ -684,8 +701,9 @@ obj/item/toy/cardhand/attack_hand(mob/user as mob)
 		C.cardname = src.choice
 		C.pickup(user)
 		user.put_in_active_hand(C)
-		src.choice = null
 		user << "\blue You take the [src.choice] from your hand."
+		src.visible_message("[user] draws a card from their hand")
+		src.choice = null
 		if(currenthand.len < 3)
 			icon_state = "hand2"
 		else if(currenthand.len < 4)
@@ -702,7 +720,7 @@ obj/item/toy/cardhand/attack_hand(mob/user as mob)
 			user << "\blue You also take the last card of your hand and hold it."
 			del(src)
 	else
-		user << "\red Choose which card to remove first."
+		..()
 
 
 obj/item/toy/cardhand/attack_self(mob/user as mob)
@@ -724,6 +742,7 @@ obj/item/toy/cardhand/Topic(href, href_list)
 	if(href_list["pick"])
 		var/choice = href_list["pick"]
 		src.choice = choice
+		return
 
 obj/item/toy/cardhand/attackby(obj/item/toy/singlecard/C, mob/living/user)
 	if(istype(C, /obj/item/toy/singlecard/))
@@ -731,6 +750,7 @@ obj/item/toy/cardhand/attackby(obj/item/toy/singlecard/C, mob/living/user)
 			src.currenthand += C.cardname
 			user.u_equip(C)
 			user << "\blue You add the [C.cardname] to your hand."
+			src.visible_message("[user] adds a card to their hand.")
 			if(currenthand.len > 4)
 				src.icon_state = "hand5"
 			else if(currenthand.len > 3)
@@ -749,9 +769,26 @@ obj/item/toy/singlecard
 	name = "card"
 	desc = "a card"
 	icon = 'icons/obj/toy.dmi'
-	icon_state = "hand1"
+	icon_state = "singlecard_down"
 	var/cardname = null
 	var/deckno = 0
+	var/flipped = 0
+	pixel_x = -5
+
+obj/item/toy/singlecard/verb/Flip()
+	set name = "Flip Card"
+	set category = "Object"
+	set src in range(1)
+	if(!flipped)
+		src.flipped = 1
+		src.icon_state = "singlecard_up"
+		src.name = src.cardname
+		src.pixel_x = 5
+	else if(flipped)
+		src.flipped = 0
+		src.icon_state = "singlecard_down"
+		src.name = "card"
+		src.pixel_x = -5
 
 obj/item/toy/singlecard/attackby(obj/item/toy/singlecard/C, mob/living/user)
 	if(istype(C, /obj/item/toy/singlecard/))
@@ -771,6 +808,7 @@ obj/item/toy/singlecard/attackby(obj/item/toy/singlecard/C, mob/living/user)
 
 obj/item/toy/singlecard/attack_self(mob/user as mob)
 	user << "\blue The card reads: [src.cardname]"
+	user.visible_message("[user] checks his card")
 
 
 
