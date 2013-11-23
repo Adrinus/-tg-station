@@ -574,6 +574,7 @@ obj/item/toy/cards
 	icon_state = "deck_full"
 	var/list/cards = list()
 	var/deckno = 0
+	var/mode = "shuffle"
 
 obj/item/toy/cards/New()
 	..()
@@ -601,13 +602,29 @@ obj/item/toy/cards/New()
 	cards += "Ace of Clubs"
 	cards += "Ace of Diamonds"
 
+obj/item/toy/cards/verb/DrawMode()
+	set name = "Change Draw Mode"
+	set category = "Object"
+	set src in range(1)
+	if(src.mode == "shuffle")
+		src.mode = "top"
+		src.visible_message("The deck is now in Top Card Mode")
+	else if(src.mode == "top")
+		src.mode = "shuffle"
+		src.visible_message("The deck is now in Random Mode")
+
+
 obj/item/toy/cards/attack_hand(mob/user as mob)
+	var/choice = null
 	if(cards.len == 0)
 		src.icon_state = "deck_empty"
 		user << "\red There are no more cards to draw."
 		return
 	var/obj/item/toy/singlecard/H = new/obj/item/toy/singlecard(user.loc)
-	var/choice = pick(src.cards)
+	if(src.mode == "shuffle")
+		choice = pick(src.cards)
+	else if(src.mode == "top")
+		choice = cards[1]
 	H.cardname = choice
 	H.deckno = src.deckno
 	src.cards -= choice
@@ -622,6 +639,14 @@ obj/item/toy/cards/attack_hand(mob/user as mob)
 	else if(cards.len > 1)
 		src.icon_state = "deck_low"
 
+obj/item/toy/cards/attack_self(mob/user as mob)
+	var/list/newcards = list()
+	while(src.cards.len > 0)
+		var/tempcard = pick(cards)
+		newcards += tempcard
+		cards -= tempcard
+	cards = newcards
+	user.visible_message("[user] shuffles the deck.")
 
 obj/item/toy/cards/attackby(obj/item/toy/singlecard/C, mob/living/user)
 	..()
@@ -629,8 +654,8 @@ obj/item/toy/cards/attackby(obj/item/toy/singlecard/C, mob/living/user)
 		if(C.deckno == src.deckno)
 			src.cards += C.cardname
 			user.u_equip(C)
-			user << "\blue You add the card back to the deck."
-			src.visible_message("[user] adds a card back to the deck")
+			user << "\blue You add the card to the bottom of the deck."
+			src.visible_message("[user] adds a card to the bottom of the deck")
 			del(C)
 		else
 			user << "\red You can't mix cards from other decks."
