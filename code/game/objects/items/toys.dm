@@ -686,12 +686,12 @@ obj/item/toy/cardhand/attack_hand(mob/user as mob)
 		user.put_in_active_hand(C)
 		src.choice = null
 		user << "\blue You take the [src.choice] from your hand."
-		if(currenthand.len < 5)
-			icon_state = "hand4"
+		if(currenthand.len < 3)
+			icon_state = "hand2"
 		else if(currenthand.len < 4)
 			icon_state = "hand3"
-		else if(currenthand.len < 3)
-			icon_state = "hand2"
+		else if(currenthand.len < 5)
+			icon_state = "hand4"
 		if(currenthand.len == 1)
 			var/obj/item/toy/singlecard/N = new/obj/item/toy/singlecard(src.loc)
 			N.deckno = src.deckno
@@ -726,19 +726,20 @@ obj/item/toy/cardhand/Topic(href, href_list)
 		src.choice = choice
 
 obj/item/toy/cardhand/attackby(obj/item/toy/singlecard/C, mob/living/user)
-	if(C.deckno == src.deckno)
-		src.currenthand += C.cardname
-		user.u_equip(C)
-		user << "\blue You add the [C.cardname] to your hand."
-		if(currenthand.len > 4)
-			src.icon_state = "hand5"
-		else if(currenthand.len > 3)
-			src.icon_state = "hand4"
-		else if(currenthand.len > 2)
-			src.icon_state = "hand3"
-		del(C)
-	else
-		user << "\red You can't mix cards from other decks."
+	if(istype(C, /obj/item/toy/singlecard/))
+		if(C.deckno == src.deckno)
+			src.currenthand += C.cardname
+			user.u_equip(C)
+			user << "\blue You add the [C.cardname] to your hand."
+			if(currenthand.len > 4)
+				src.icon_state = "hand5"
+			else if(currenthand.len > 3)
+				src.icon_state = "hand4"
+			else if(currenthand.len > 2)
+				src.icon_state = "hand3"
+			del(C)
+		else
+			user << "\red You can't mix cards from other decks."
 
 
 
@@ -753,19 +754,20 @@ obj/item/toy/singlecard
 	var/deckno = 0
 
 obj/item/toy/singlecard/attackby(obj/item/toy/singlecard/C, mob/living/user)
-	if(C.deckno == src.deckno)
-		var/obj/item/toy/cardhand/H = new/obj/item/toy/cardhand(user.loc)
-		H.currenthand += C.cardname
-		H.currenthand += src.cardname
-		H.deckno = C.deckno
-		user.u_equip(C)
-		H.pickup(user)
-		user.put_in_active_hand(H)
-		user << "\blue You combine the cards into a hand."
-		del(C)
-		del(src)
-	else
-		user << "\red You can't mix cards from other decks."
+	if(istype(C, /obj/item/toy/singlecard/))
+		if(C.deckno == src.deckno)
+			var/obj/item/toy/cardhand/H = new/obj/item/toy/cardhand(user.loc)
+			H.currenthand += C.cardname
+			H.currenthand += src.cardname
+			H.deckno = C.deckno
+			user.u_equip(C)
+			H.pickup(user)
+			user.put_in_active_hand(H)
+			user << "\blue You combine the [C.cardname] and the [src.cardname] into a hand."
+			del(C)
+			del(src)
+		else
+			user << "\red You can't mix cards from other decks."
 
 obj/item/toy/singlecard/attack_self(mob/user as mob)
 	user << "\blue The card reads: [src.cardname]"
