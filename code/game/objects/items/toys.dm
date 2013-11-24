@@ -701,6 +701,9 @@ obj/item/toy/cardhand
 
 obj/item/toy/cardhand/attack_self(mob/user as mob)
 	user.set_machine(src)
+	interact(user)
+
+obj/item/toy/cardhand/interact(mob/user)
 	var/dat = "You have:<BR>"
 	for(var/t in currenthand)
 		dat += "<A href='?src=\ref[src];pick=[t]'>A [t].</A><BR>"
@@ -717,32 +720,37 @@ obj/item/toy/cardhand/Topic(href, href_list)
 	if(usr.restrained() || usr.lying || usr.stat || !ishuman(usr))
 		return
 	var/mob/living/carbon/human/cardUser = usr
-	usr.set_machine(src)
 	if(href_list["pick"])
-		var/choice = href_list["pick"]
-		var/obj/item/toy/singlecard/C = new/obj/item/toy/singlecard(cardUser.loc)
-		src.currenthand -= choice
-		C.parentdeck = src.parentdeck
-		C.cardname = choice
-		C.pickup(cardUser)
-		cardUser.put_in_inactive_hand(C)
-		cardUser << "\blue You take the [C.cardname] from your hand."
-		src.visible_message("[cardUser] draws a card from their hand")
-		if(src.currenthand.len < 3)
-			src.icon_state = "hand2"
-		else if(src.currenthand.len < 4)
-			src.icon_state = "hand3"
-		else if(src.currenthand.len < 5)
-			src.icon_state = "hand4"
-		if(src.currenthand.len == 1)
-			var/obj/item/toy/singlecard/N = new/obj/item/toy/singlecard(src.loc)
-			N.parentdeck = src.parentdeck
-			N.cardname = src.currenthand[1]
-			cardUser.u_equip(src)
-			N.pickup(cardUser)
-			cardUser.put_in_inactive_hand(N)
-			cardUser << "\blue You also take [currenthand[1]] and hold it."
-			del(src)
+		if (cardUser.get_item_by_slot(slot_l_hand) == src || cardUser.get_item_by_slot(slot_r_hand) == src)
+			var/choice = href_list["pick"]
+			var/obj/item/toy/singlecard/C = new/obj/item/toy/singlecard(cardUser.loc)
+			src.currenthand -= choice
+			C.parentdeck = src.parentdeck
+			C.cardname = choice
+			C.pickup(cardUser)
+			cardUser.put_in_any_hand_if_possible(C)
+			cardUser << "\blue You take the [C.cardname] from your hand."
+			src.visible_message("[cardUser] draws a card from \his hand")
+
+			interact(cardUser)
+
+			if(src.currenthand.len < 3)
+				src.icon_state = "hand2"
+			else if(src.currenthand.len < 4)
+				src.icon_state = "hand3"
+			else if(src.currenthand.len < 5)
+				src.icon_state = "hand4"
+
+			if(src.currenthand.len == 1)
+				var/obj/item/toy/singlecard/N = new/obj/item/toy/singlecard(src.loc)
+				N.parentdeck = src.parentdeck
+				N.cardname = src.currenthand[1]
+				cardUser.u_equip(src)
+				N.pickup(cardUser)
+				cardUser.put_in_any_hand_if_possible(N)
+				cardUser << "\blue You also take [currenthand[1]] and hold it."
+				cardUser << browse(null, "window=cardhand")
+				del(src)
 		return
 
 obj/item/toy/cardhand/attackby(obj/item/toy/singlecard/C, mob/living/user)
@@ -752,6 +760,7 @@ obj/item/toy/cardhand/attackby(obj/item/toy/singlecard/C, mob/living/user)
 			user.u_equip(C)
 			user << "\blue You add the [C.cardname] to your hand."
 			src.visible_message("[user] adds a card to their hand.")
+			interact(user)
 			if(currenthand.len > 4)
 				src.icon_state = "hand5"
 			else if(currenthand.len > 3)
@@ -776,6 +785,17 @@ obj/item/toy/singlecard
 	var/flipped = 0
 	pixel_x = -5
 
+obj/item/toy/singlecard/examine()
+	set src in usr.contents
+	if (ishuman(usr))
+		var/mob/living/carbon/human/cardUser = usr
+		if (cardUser.get_item_by_slot(slot_l_hand) == src || cardUser.get_item_by_slot(slot_r_hand) == src)
+			cardUser << "\blue The card reads: [src.cardname]"
+			cardUser.visible_message("[cardUser] checks \his card")
+		else
+			cardUser << "You need to have the card in your hand to check it."
+
+
 obj/item/toy/singlecard/verb/Flip()
 	set name = "Flip Card"
 	set category = "Object"
@@ -791,8 +811,9 @@ obj/item/toy/singlecard/verb/Flip()
 		src.name = "card"
 		src.pixel_x = -5
 
-obj/item/toy/singlecard/attackby(obj/item/toy/singlecard/C, mob/living/user)
-	if(istype(C, /obj/item/toy/singlecard/))
+obj/item/toy/singlecard/attackby(var/obj/item/W as obj, mob/living/user as mob)
+	if(istype(W, /obj/item/toy/singlecard/))
+		var/obj/item/toy/singlecard/C = W
 		if(C.parentdeck == src.parentdeck)
 			var/obj/item/toy/cardhand/H = new/obj/item/toy/cardhand(user.loc)
 			H.currenthand += C.cardname
@@ -807,9 +828,32 @@ obj/item/toy/singlecard/attackby(obj/item/toy/singlecard/C, mob/living/user)
 		else
 			user << "\red You can't mix cards from other decks."
 
+	if(istype(W, /obj/item/toy/cardhand/))
+		var/obj/item/toy/cardhand/H = W
+		if(H.parentdeck == parentdeck)
+			H.currenthand += cardname
+			user.u_equip(src)
+			user << "\blue You add the [cardname] to your hand."
+			src.visible_message("[user] adds a card to their hand.")
+			H.interact(user)
+			if(H.currenthand.len > 4)
+				H.icon_state = "hand5"
+			else if(H.currenthand.len > 3)
+				H.icon_state = "hand4"
+			else if(H.currenthand.len > 2)
+				H.icon_state = "hand3"
+			del(src)
+		else
+			user << "\red You can't mix cards from other decks."
+
+
 obj/item/toy/singlecard/attack_self(mob/user as mob)
-	user << "\blue The card reads: [src.cardname]"
-	user.visible_message("[user] checks his card")
+	Flip()
+
+
+
+
+
 
 
 
