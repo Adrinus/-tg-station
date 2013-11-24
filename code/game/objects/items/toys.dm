@@ -698,35 +698,6 @@ obj/item/toy/cardhand
 	var/obj/item/toy/cards/parentdeck = null
 	var/choice = null
 
-obj/item/toy/cardhand/attack_hand(mob/user as mob)
-	if(src.choice != null)
-		var/obj/item/toy/singlecard/C = new/obj/item/toy/singlecard(user.loc)
-		currenthand -= choice
-		C.parentdeck = src.parentdeck
-		C.cardname = src.choice
-		C.pickup(user)
-		user.put_in_active_hand(C)
-		user << "\blue You take the [src.choice] from your hand."
-		src.visible_message("[user] draws a card from their hand")
-		src.choice = null
-		if(currenthand.len < 3)
-			icon_state = "hand2"
-		else if(currenthand.len < 4)
-			icon_state = "hand3"
-		else if(currenthand.len < 5)
-			icon_state = "hand4"
-		if(currenthand.len == 1)
-			var/obj/item/toy/singlecard/N = new/obj/item/toy/singlecard(src.loc)
-			N.parentdeck = src.parentdeck
-			N.cardname = currenthand[1]
-			user.u_equip(src)
-			N.pickup(user)
-			user.put_in_inactive_hand(N)
-			user << "\blue You also take [currenthand[1]] and hold it."
-			del(src)
-	else
-		..()
-
 
 obj/item/toy/cardhand/attack_self(mob/user as mob)
 	user.set_machine(src)
@@ -743,10 +714,35 @@ obj/item/toy/cardhand/attack_self(mob/user as mob)
 obj/item/toy/cardhand/Topic(href, href_list)
 	if(..())
 		return
+	if(usr.restrained() || usr.lying || usr.stat || !ishuman(usr))
+		return
+	var/mob/living/carbon/human/cardUser = usr
 	usr.set_machine(src)
 	if(href_list["pick"])
 		var/choice = href_list["pick"]
-		src.choice = choice
+		var/obj/item/toy/singlecard/C = new/obj/item/toy/singlecard(cardUser.loc)
+		src.currenthand -= choice
+		C.parentdeck = src.parentdeck
+		C.cardname = choice
+		C.pickup(cardUser)
+		cardUser.put_in_inactive_hand(C)
+		cardUser << "\blue You take the [C.cardname] from your hand."
+		src.visible_message("[cardUser] draws a card from their hand")
+		if(src.currenthand.len < 3)
+			src.icon_state = "hand2"
+		else if(src.currenthand.len < 4)
+			src.icon_state = "hand3"
+		else if(src.currenthand.len < 5)
+			src.icon_state = "hand4"
+		if(src.currenthand.len == 1)
+			var/obj/item/toy/singlecard/N = new/obj/item/toy/singlecard(src.loc)
+			N.parentdeck = src.parentdeck
+			N.cardname = src.currenthand[1]
+			cardUser.u_equip(src)
+			N.pickup(cardUser)
+			cardUser.put_in_inactive_hand(N)
+			cardUser << "\blue You also take [currenthand[1]] and hold it."
+			del(src)
 		return
 
 obj/item/toy/cardhand/attackby(obj/item/toy/singlecard/C, mob/living/user)
@@ -814,6 +810,9 @@ obj/item/toy/singlecard/attackby(obj/item/toy/singlecard/C, mob/living/user)
 obj/item/toy/singlecard/attack_self(mob/user as mob)
 	user << "\blue The card reads: [src.cardname]"
 	user.visible_message("[user] checks his card")
+
+
+
 
 
 
