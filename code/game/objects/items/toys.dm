@@ -613,7 +613,7 @@ obj/item/toy/cards/attack_hand(mob/user as mob)
 	src.cards -= choice
 	H.pickup(user)
 	user.put_in_active_hand(H)
-	src.visible_message("[user] draws a card from the deck")
+	src.visible_message("[user] draws a card from the deck.")
 	if(cards.len > 26)
 		src.icon_state = "deck_full"
 	else if(cards.len > 10)
@@ -627,12 +627,12 @@ obj/item/toy/cards/attack_self(mob/user as mob)
 		playsound(user, 'sound/items/cardshuffle.ogg', 50, 1)
 		user.visible_message("[user] shuffles the deck.")
 		cooldown = 1
-		spawn(10) cooldown = 0
-		return
+		spawn(10)
+		cooldown = 0
 
 obj/item/toy/cards/attackby(obj/item/toy/singlecard/C, mob/living/user)
 	..()
-	if(istype(C, /obj/item/toy/singlecard))
+	if(istype(C))
 		if(C.parentdeck == src)
 			src.cards += C.cardname
 			user.u_equip(C)
@@ -650,7 +650,7 @@ obj/item/toy/cards/attackby(obj/item/toy/singlecard/C, mob/living/user)
 
 obj/item/toy/cards/attackby(obj/item/toy/cardhand/C, mob/living/user)
 	..()
-	if(istype(C, /obj/item/toy/cardhand))
+	if(istype(C))
 		if(C.parentdeck == src)
 			src.cards += C.currenthand
 			user.u_equip(C)
@@ -729,8 +729,7 @@ obj/item/toy/cardhand/Topic(href, href_list)
 			C.cardname = choice
 			C.pickup(cardUser)
 			cardUser.put_in_any_hand_if_possible(C)
-			cardUser << "\blue You take the [C.cardname] from your hand."
-			src.visible_message("[cardUser] draws a card from \his hand")
+			cardUser.visible_message("<span class='notice'>[cardUser] draws a card from \his hand.</span>", "<span class='notice'>You take the [C.cardname] from your hand.</span>")
 
 			interact(cardUser)
 
@@ -754,12 +753,11 @@ obj/item/toy/cardhand/Topic(href, href_list)
 		return
 
 obj/item/toy/cardhand/attackby(obj/item/toy/singlecard/C, mob/living/user)
-	if(istype(C, /obj/item/toy/singlecard/))
+	if(istype(C))
 		if(C.parentdeck == src.parentdeck)
 			src.currenthand += C.cardname
 			user.u_equip(C)
-			user << "\blue You add the [C.cardname] to your hand."
-			src.visible_message("[user] adds a card to their hand.")
+			user.visible_message("<span class='notice'>[user] adds a card to their hand.</span>", "<span class='notice'>You add the [C.cardname] to your hand.</span>")
 			interact(user)
 			if(currenthand.len > 4)
 				src.icon_state = "hand5"
@@ -787,11 +785,10 @@ obj/item/toy/singlecard
 
 obj/item/toy/singlecard/examine()
 	set src in usr.contents
-	if (ishuman(usr))
+	if(ishuman(usr))
 		var/mob/living/carbon/human/cardUser = usr
-		if (cardUser.get_item_by_slot(slot_l_hand) == src || cardUser.get_item_by_slot(slot_r_hand) == src)
-			cardUser << "\blue The card reads: [src.cardname]"
-			cardUser.visible_message("[cardUser] checks \his card")
+		if(cardUser.get_item_by_slot(slot_l_hand) == src || cardUser.get_item_by_slot(slot_r_hand) == src)
+			cardUser.visible_message("<span class='notice'>[cardUser] checks \his card.</span>", "<span class='notice'>The card reads: [src.cardname]</span>")
 		else
 			cardUser << "You need to have the card in your hand to check it."
 
@@ -811,9 +808,9 @@ obj/item/toy/singlecard/verb/Flip()
 		src.name = "card"
 		src.pixel_x = -5
 
-obj/item/toy/singlecard/attackby(var/obj/item/W as obj, mob/living/user as mob)
-	if(istype(W, /obj/item/toy/singlecard/))
-		var/obj/item/toy/singlecard/C = W
+obj/item/toy/singlecard/attackby(obj/item/I, mob/living/user)
+	if(istype(I, /obj/item/toy/singlecard/))
+		var/obj/item/toy/singlecard/C = I
 		if(C.parentdeck == src.parentdeck)
 			var/obj/item/toy/cardhand/H = new/obj/item/toy/cardhand(user.loc)
 			H.currenthand += C.cardname
@@ -828,13 +825,12 @@ obj/item/toy/singlecard/attackby(var/obj/item/W as obj, mob/living/user as mob)
 		else
 			user << "\red You can't mix cards from other decks."
 
-	if(istype(W, /obj/item/toy/cardhand/))
-		var/obj/item/toy/cardhand/H = W
+	if(istype(I, /obj/item/toy/cardhand/))
+		var/obj/item/toy/cardhand/H = I
 		if(H.parentdeck == parentdeck)
 			H.currenthand += cardname
 			user.u_equip(src)
-			user << "\blue You add the [cardname] to your hand."
-			src.visible_message("[user] adds a card to their hand.")
+			user.visible_message("<span class='notice'>[user] adds a card to \his hand.</span>", "<span class='notice'>You add the [cardname] to your hand.</span>")
 			H.interact(user)
 			if(H.currenthand.len > 4)
 				H.icon_state = "hand5"
@@ -847,7 +843,7 @@ obj/item/toy/singlecard/attackby(var/obj/item/W as obj, mob/living/user as mob)
 			user << "\red You can't mix cards from other decks."
 
 
-obj/item/toy/singlecard/attack_self(mob/user as mob)
+obj/item/toy/singlecard/attack_self(mob/user)
 	Flip()
 
 
