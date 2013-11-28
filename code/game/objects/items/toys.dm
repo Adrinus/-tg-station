@@ -799,8 +799,12 @@ obj/item/toy/singlecard/verb/Flip()
 	set src in range(1)
 	if(!flipped)
 		src.flipped = 1
-		src.icon_state = "singlecard_up"
-		src.name = src.cardname
+		if (cardname)
+			src.icon_state = "sc_[cardname]"
+			src.name = src.cardname
+		else
+			src.icon_state = "sc_Ace of Spades"
+			src.name = "What Card"
 		src.pixel_x = 5
 	else if(flipped)
 		src.flipped = 0
